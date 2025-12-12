@@ -102,101 +102,192 @@ Backend will start on:
 
 http://localhost:8080
 
-
 ---
 
-## 4. Public REST API (for Frontend)
+## 3. API Contract (for Frontend)
 
-### Base URL
+### 3.1 Base URL and Headers
 
-- Local dev: `http://localhost:8080`
-- All endpoints below are relative to this base.
+- Local base URL: `http://localhost:8080`  
+- All APIs are under base path: `/api/v1`  
+- Content type: all requests and responses use `application/json`.  
+- CORS: configured to allow local web and Android development environments. [web:94]
 
-### 4.1 Compare prices for a query
+### 3.2 Main Endpoint – Compare Prices
 
-**Endpoint**
+This is the primary endpoint the frontend will use in the app.
 
-```text
-`GET /api/v1/compare`
-```
+- Method: `POST`  
+- URL: `/api/v1/compare`  
+- Purpose: given a product name, returns offers from multiple sources.
 
-**Description**
-
-Scrapes configured sources for the given query, stores the results, and returns a comparison response with offers sorted by price.
-
-**Query parameters**
-
-| Name | Type   | Required | Description                               |
-|------|--------|----------|-------------------------------------------|
-| q    | string | yes      | Search text, e.g. `"iphone 15 128GB"`     |
-
-**Example request**
-
-```text
-GET /api/v1/compare?q=iphone%2015%20128GB
-```
-
-**Success response – 200 OK**
-
+#### 3.2.1 Request Body
 ```text
 {
-"query": "iphone 15 128GB",
-"productName": "iphone 15 128GB",
+"productName": "Apple iPhone 15 128GB",
+"maxResults": 10
+}
+```
+- `productName` (string, required): Search phrase or product name entered by the user.  
+- `maxResults` (integer, optional): Maximum number of offers to return; default is 10 if omitted.
+
+#### 3.2.2 Successful Response (200)
+```text
+{
+"productName": "Apple iPhone 15 128GB",
 "offers": [
 {
-"sourceName": "AmazonMock",
-"title": "iPhone 15 128GB Blue",
-"price": 69999.0,
+"sourceName": "DemoStore A",
+"productTitle": "Apple iPhone 15 128GB (Black)",
+"price": 79999.0,
 "currency": "INR",
-"productUrl": "https://example.com/product/123",
-"imageUrl": "https://example.com/images/123.jpg"
+"productUrl": "https://demostore-a.example.com/iphone-15-128-black",
+"inStock": true,
+"lastUpdated": "2025-12-12T10:15:30Z"
 },
 {
-"sourceName": "FlipkartMock",
-"title": "iPhone 15 128GB Black",
-"price": 68999.0,
+"sourceName": "DemoStore B",
+"productTitle": "Apple iPhone 15 128GB",
+"price": 78999.0,
 "currency": "INR",
-"productUrl": "https://example.com/product/456",
-"imageUrl": "https://example.com/images/456.jpg"
+"productUrl": "https://demostore-b.example.com/iphone-15-128",
+"inStock": true,
+"lastUpdated": "2025-12-12T10:16:02Z"
 }
 ]
 }
 ```
 
-**Field descriptions**
+- `productName` (string): Echo of the requested product.  
+- `offers` (array):
+  - `sourceName` (string): Identifier of the source.  
+  - `productTitle` (string): Title as scraped from the source page.  
+  - `price` (number): Final price of the product.  
+  - `currency` (string): Currency code, e.g. `INR`.  
+  - `productUrl` (string): Link to open in a browser or WebView.  
+  - `inStock` (boolean): Availability flag.  
+  - `lastUpdated` (string, ISO‑8601): Timestamp when this offer was last refreshed.  
 
-- `query` – Original query the client sent.
-- `productName` – Normalized product name stored by backend.
-- `offers` – Array of offers from different sources:
-  - `sourceName` – Source/site name (e.g. `"Amazon"`, `"Flipkart"`).
-  - `title` – Product title from that source.
-  - `price` – Price as decimal (no currency symbol).
-  - `currency` – Currency code, e.g. `"INR"`.
-  - `productUrl` – URL for opening in WebView / browser.
-  - `imageUrl` – Optional product image URL (may be null/empty).
+Offers are sorted from lowest price to highest.
 
-**Error responses**
+### 3.3 Error Model
 
-- `400 Bad Request` – missing or blank `q`:
+Errors are returned using a consistent JSON structure.
+```text
+{
+"timestamp": "2025-12-12T10:20:00Z",
+"status": 400,
+"error": "Bad Request",
+"message": "productName must not be empty",
+"path": "/api/v1/compare"
+}
+```
 
-{ "error": "Query must not be empty" }
+- **400 Bad Request**: Validation issues, such as missing or empty `productName`.  
+- **500 Internal Server Error**: Unexpected errors or scraper failures.  
+- Frontend should show user‑friendly messages based on `message` and may log `status` and `error`.
 
-- `404 Not Found` – no offers found for the query:
+### 3.4 Debug / Scraper Endpoints
 
-{ "error": "No offers found" }
+These are for internal testing and should not be used in production UI.
 
-- `500 Internal Server Error` – unexpected backend/scraper error:
-
-{ "error": "Internal error: <message>" }
+- Controller: `ScraperController`  
+- Sample purpose: manually trigger scrapes or inspect raw scraped data.  
+- Frontend teams should confirm with backend before using these in any tools.
 
 ---
 
-## 5. CORS (for React / Web)
+## 4. Integration Examples
 
-Web frontend (React dev server) calls from `http://localhost:3000` are allowed via `CorsConfig`:
-
+### 4.1 Web (React with Axios)
 ```text
-registry.addMapping("/api/**")
-.allowedOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+import axios from "axios";
+
+const BASE_URL = "http://localhost:8080/api/v1";
+
+export async function comparePrices(productName: string, maxResults = 10) {
+const res = await axios.post(${BASE_URL}/compare, {
+productName,
+maxResults
+});
+return res.data; // { productName, offers: [...] }
+}
 ```
-(If your DB user or DB name differs, adjust the URL/username/password.)
+
+### 4.2 Android (Kotlin + Retrofit)
+```text
+data class CompareRequest(
+val productName: String,
+val maxResults: Int = 10
+)
+
+data class OfferDto(
+val sourceName: String,
+val productTitle: String,
+val price: Double,
+val currency: String,
+val productUrl: String,
+val inStock: Boolean,
+val lastUpdated: String
+)
+
+data class ProductComparisonDto(
+val productName: String,
+val offers: List<OfferDto>
+)
+
+interface PriceCompareApi {
+@POST("/api/v1/compare")
+suspend fun comparePrices(@Body body: CompareRequest): ProductComparisonDto
+}
+```
+
+Frontend teams can plug these examples directly into their networking layer and build UI lists against the `offers` array fields.
+
+---
+
+## 5. Local Setup (Backend)
+
+### 5.1 Prerequisites
+
+- Java 17+  
+- Maven (or Maven wrapper included)  
+- PostgreSQL running locally  
+
+### 5.2 Create Database and User (PostgreSQL)
+
+Connect as `postgres` (or another superuser):
+```text
+psql -U postgres
+```
+
+Inside `psql`:
+```text
+CREATE DATABASE price_comparison;
+
+CREATE ROLE "priceCompareUser" WITH LOGIN PASSWORD 'your_password_here';
+
+GRANT ALL PRIVILEGES ON DATABASE price_comparison TO "priceCompareUser";
+
+\c price_comparison;
+
+GRANT USAGE, CREATE ON SCHEMA public TO "priceCompareUser";
+ALTER SCHEMA public OWNER TO "priceCompareUser";
+
+\q
+```
+
+### 5.3 Configure Spring Boot
+
+Edit `src/main/resources/application.properties`:
+```text
+spring.datasource.url=jdbc:postgresql://localhost:5432/price_comparison
+spring.datasource.username=priceCompareUser
+spring.datasource.password=your_password_here
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+server.port=8080
+```
+If your database name or user differs, adjust the URL, username, and password accordingly
