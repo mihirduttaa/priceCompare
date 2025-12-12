@@ -30,22 +30,23 @@ public class ComparisonService {
     }
 
     public ProductComparisonDto compare(String query) throws Exception {
+        String normalizedQuery = query.trim();
         // 1) scrape all sources
-        List<ScrapedOfferDto> scraped = scraperService.scrapeAll(query);
+        List<ScrapedOfferDto> scraped = scraperService.scrapeAll(normalizedQuery);
 
         // 2) save to DB
-        importService.saveScrapedOffers(query, scraped);
+        importService.saveScrapedOffers(normalizedQuery, scraped);
 
         // 3) load product + offers from DB
-        Product product = productRepository.findByNameContainingIgnoreCase(query)
-                .stream().findFirst().orElseThrow();
+        Product product = productRepository.findByNameContainingIgnoreCase(normalizedQuery)
+                .stream().findFirst().orElseThrow(() -> new IllegalStateException("Product not found after import"));
 
         List<Offer> offers = offerRepository.findByProductOrderByPriceAsc(product);
         offers.sort(Comparator.comparing(Offer::getPrice));
 
         // 4) map to DTO
         ProductComparisonDto dto = new ProductComparisonDto();
-        dto.setQuery(query);
+        dto.setQuery(normalizedQuery);
         dto.setProductName(product.getName());
 
         List<ProductComparisonDto.OfferDto> offerDtos = offers.stream().map(o -> {
