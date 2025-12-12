@@ -1,4 +1,4 @@
-# PriceCompare – Backend
+# PriceCompare
 
 Interactive backend service to compare prices of a product across multiple e‑commerce sources (currently demo/mock scrapers).  
 Frontend can be Android (Kotlin/Java) or Web (React) consuming a simple REST API.
@@ -17,31 +17,30 @@ Frontend can be Android (Kotlin/Java) or Web (React) consuming a simple REST API
 
 ## 2. Project Structure (Backend)
 
+```text
 src/main/java/com/pricecompare/price_compare
 ├── config
-│ └── CorsConfig.java # CORS for web frontends
+│   └── CorsConfig.java           # CORS for web frontends
 ├── controller
-│ ├── ComparisonController.java # Public REST API (/api/v1/compare)
-│ └── ScraperController.java # Debug endpoints (optional)
+│   ├── ComparisonController.java # Public REST API (/api/v1/compare)
+│   └── ScraperController.java    # Debug endpoints (optional)
 ├── dto
-│ ├── ProductComparisonDto.java # API response model
-│ └── ScrapedOfferDto.java # Internal scraped data model
+│   ├── ProductComparisonDto.java # API response model
+│   └── ScrapedOfferDto.java      # Internal scraped data model
 ├── entity
-│ ├── Product.java
-│ ├── Offer.java
-│ └── Source.java
+│   ├── Product.java
+│   ├── Offer.java
+│   └── Source.java
 ├── repository
-│ ├── ProductRepository.java
-│ ├── OfferRepository.java
-│ └── SourceRepository.java
+│   ├── ProductRepository.java
+│   ├── OfferRepository.java
+│   └── SourceRepository.java
 ├── service
-│ ├── ScraperService.java # Scrapes demo/catalog sites
-│ ├── ImportService.java # Saves scraped data into DB
-│ └── ComparisonService.java # Builds comparison response DTO
-└── PriceCompareApplication.java # Spring Boot main class
-
----
-
+│   ├── ScraperService.java       # Scrapes demo/catalog sites
+│   ├── ImportService.java        # Saves scraped data into DB
+│   └── ComparisonService.java    # Builds comparison response DTO
+└── PriceCompareApplication.java  # Spring Boot main class
+```
 ## 3. Local Setup
 
 ### 3.1 Prerequisites
@@ -54,10 +53,13 @@ src/main/java/com/pricecompare/price_compare
 
 Connect as `postgres` (or another superuser):
 
+```text
 psql -U postgres
+```
 
 Inside `psql`:
 
+```text
 CREATE DATABASE price_comparison;
 
 CREATE ROLE "priceCompareUser" WITH LOGIN PASSWORD 'your_password_here';
@@ -70,12 +72,13 @@ GRANT USAGE, CREATE ON SCHEMA public TO "priceCompareUser";
 ALTER SCHEMA public OWNER TO "priceCompareUser";
 
 \q
-
+```
 
 ### 3.3 Configure Spring Boot
 
 Edit `src/main/resources/application.properties`:
 
+```text
 spring.datasource.url=jdbc:postgresql://localhost:5432/price_comparison
 spring.datasource.username=priceCompareUser
 spring.datasource.password=your_password_here
@@ -85,15 +88,16 @@ spring.jpa.show-sql=true
 
 server.port=8080
 
-
 (If your DB user or DB name differs, adjust the URL/username/password.)
+```
 
 ### 3.4 Run the backend
 
 From the project root:
 
+```text
 ./mvnw spring-boot:run
-
+```
 Backend will start on:
 
 http://localhost:8080
@@ -112,7 +116,9 @@ http://localhost:8080
 
 **Endpoint**
 
+```text
 `GET /api/v1/compare`
+```
 
 **Description**
 
@@ -126,11 +132,13 @@ Scrapes configured sources for the given query, stores the results, and returns 
 
 **Example request**
 
+```text
 GET /api/v1/compare?q=iphone%2015%20128GB
-
+```
 
 **Success response – 200 OK**
 
+```text
 {
 "query": "iphone 15 128GB",
 "productName": "iphone 15 128GB",
@@ -153,7 +161,7 @@ GET /api/v1/compare?q=iphone%2015%20128GB
 }
 ]
 }
-
+```
 
 **Field descriptions**
 
@@ -187,7 +195,8 @@ GET /api/v1/compare?q=iphone%2015%20128GB
 
 Web frontend (React dev server) calls from `http://localhost:3000` are allowed via `CorsConfig`:
 
+```text
 registry.addMapping("/api/**")
 .allowedOrigins("http://localhost:3000", "http://127.0.0.1:3000")
-
-
+```
+(If your DB user or DB name differs, adjust the URL/username/password.)
