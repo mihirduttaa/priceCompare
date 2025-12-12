@@ -41,69 +41,6 @@ src/main/java/com/pricecompare/price_compare
 │   └── ComparisonService.java    # Builds comparison response DTO
 └── PriceCompareApplication.java  # Spring Boot main class
 ```
-## 3. Local Setup
-
-### 3.1 Prerequisites
-
-- Java 17+
-- Maven (or Maven wrapper included)
-- PostgreSQL running locally
-
-### 3.2 Create database and user (PostgreSQL)
-
-Connect as `postgres` (or another superuser):
-
-```text
-psql -U postgres
-```
-
-Inside `psql`:
-
-```text
-CREATE DATABASE price_comparison;
-
-CREATE ROLE "priceCompareUser" WITH LOGIN PASSWORD 'your_password_here';
-
-GRANT ALL PRIVILEGES ON DATABASE price_comparison TO "priceCompareUser";
-
-\c price_comparison;
-
-GRANT USAGE, CREATE ON SCHEMA public TO "priceCompareUser";
-ALTER SCHEMA public OWNER TO "priceCompareUser";
-
-\q
-```
-
-### 3.3 Configure Spring Boot
-
-Edit `src/main/resources/application.properties`:
-
-```text
-spring.datasource.url=jdbc:postgresql://localhost:5432/price_comparison
-spring.datasource.username=priceCompareUser
-spring.datasource.password=your_password_here
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-server.port=8080
-
-(If your DB user or DB name differs, adjust the URL/username/password.)
-```
-
-### 3.4 Run the backend
-
-From the project root:
-
-```text
-./mvnw spring-boot:run
-```
-Backend will start on:
-
-http://localhost:8080
-
----
-
 ## 3. API Contract (for Frontend)
 
 ### 3.1 Base URL and Headers
