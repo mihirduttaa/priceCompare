@@ -10,6 +10,7 @@ public class ProductComparisonDto {
 
     public static class OfferDto {
         private String sourceName;
+        private String title;
         private BigDecimal price;
         private String currency;
         private String productUrl;
@@ -54,6 +55,14 @@ public class ProductComparisonDto {
 
         public void setImageUrl(String imageUrl) {
             this.imageUrl = imageUrl;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
         }
     }
 
